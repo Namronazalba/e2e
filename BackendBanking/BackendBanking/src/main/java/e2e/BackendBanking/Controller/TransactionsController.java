@@ -29,15 +29,15 @@ public class TransactionsController {
 
     // ================= HISTORY =================
     @GetMapping("/history/{accountId}")
-    public List<TransactionResponse> getHistory(@PathVariable Long accountId) {
+    public List<TransactionResponse> getHistory(@PathVariable String accountId) {
 
-        Account account = accountService.findById(accountId);
+//        Account account = accountService.findById(accountId);
 
-        return transactionService.getAccountTransactions(account);
+        return transactionService.getAccountTransactions(accountId);
     }
     // ================= DEPOSIT =================
     @PostMapping("/deposit/{accountId}")
-    public String deposit(@PathVariable Long accountId,
+    public String deposit(@PathVariable String accountId,
                           @RequestBody AmountRequest request,
                           Authentication authentication) {
 
@@ -53,7 +53,7 @@ public class TransactionsController {
 
     // ================= WITHDRAW =================
     @PostMapping("/withdraw/{accountId}")
-    public String withdraw(@PathVariable Long accountId,
+    public String withdraw(@PathVariable String accountId,
                            @RequestBody AmountRequest request,
                            Authentication authentication) {
 
@@ -68,7 +68,7 @@ public class TransactionsController {
 
     // ================= BALANCE =================
     @GetMapping("/balance/{accountId}")
-    public double getBalance(@PathVariable Long accountId,
+    public double getBalance(@PathVariable String accountId,
                              Authentication authentication) {
 
         Account account = accountService.findById(accountId);
@@ -86,34 +86,6 @@ public class TransactionsController {
         return "Own transfer successful";
     }
 
-    // ================= TRANSFER Other =================
-    @PostMapping("/transfer/other")
-    public ResponseEntity<String> transferOther(
-            @RequestBody TransferRequest request,
-            Authentication authentication) {
-
-        transactionService.transferOther(
-                request.getFromAccountId(),
-                request.getToAccountId(),
-                request.getAmount(),
-                request.getDescription(),
-                authentication.getName()
-        );
-
-        return ResponseEntity.ok("Transfer successful");
-    }
-    // ================= TRANSFER EXTERNAL =================
-    @PostMapping("/transfer/external")
-    public String transferExternal(@RequestBody TransferRequest request,
-                                   Authentication authentication) {
-
-        Account from = accountService.findById(request.getFromAccountId());
-        Account to = accountService.findById(request.getToAccountId());
-
-        transactionService.transferExternal(from, to, request.getAmount(),request.getDescription());
-
-        return "External transfer successful";
-    }
 
 
 }

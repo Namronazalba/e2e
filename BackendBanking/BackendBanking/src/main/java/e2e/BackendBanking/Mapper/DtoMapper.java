@@ -7,8 +7,9 @@ import e2e.BackendBanking.Model.User.User;
 import e2e.BackendBanking.Dto.Transaction.TransactionResponse;
 import e2e.BackendBanking.Model.Transaction.Transaction;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DtoMapper {
 
@@ -42,17 +43,26 @@ public class DtoMapper {
         );
     }
 
-    public static TransactionResponse toTransactionDto(Transaction tx, Account account) {
+    public TransactionResponse toResponse(
+            Transaction transaction,
+            Account fromAccount,
+            Account toAccount,
+            Double balance) {
+
         return new TransactionResponse(
-                tx.getId(),
-                tx.getType(),
-                tx.getStatus(),
-                tx.getAmount(),
-                tx.getTimestamp(),
-                tx.getFromAccount() != null ? tx.getFromAccount().getAccountNumber() : null,
-                tx.getToAccount() != null ? tx.getToAccount().getAccountNumber() : null,
-                account.getBalance(),
-                null
+                transaction.getId(),
+                transaction.getType(),
+                transaction.getStatus(),
+                transaction.getAmount(),
+                transaction.getTimestamp(),
+                fromAccount != null
+                        ? fromAccount.getAccountNumber()
+                        : null,
+                toAccount != null
+                        ? toAccount.getAccountNumber()
+                        : null,
+                balance,
+                transaction.getReference()
         );
     }
 }

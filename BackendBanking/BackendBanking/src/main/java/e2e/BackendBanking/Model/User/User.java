@@ -28,6 +28,9 @@ public class User {
     private List<String> accountIds;
 
 
+    private Integer failedAttempts = 0;
+    private LocalDateTime lockUntil;
+
     // ================= CONSTRUCTOR =================
     public User() { }
 
@@ -51,6 +54,15 @@ public class User {
     public List<String> getAccounts() { return accountIds; }
 
 
+    public Integer getFailedAttempts() {
+        return failedAttempts;
+    }
+
+    public LocalDateTime getLockUntil() {
+        return lockUntil;
+    }
+
+
     // ================= SETTERS =================
     public void setUsername(String username) { this.username = username; }
     public void setEmail(String email) { this.email = email; }
@@ -64,4 +76,10 @@ public class User {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public void setLastLogin(LocalDateTime lastLogin) { this.lastLogin = lastLogin; }
     public void setAccounts(List<String> accounts) { this.accountIds = accounts; }
+    public void setFailedAttempts(Integer failedAttempts) {
+        this.failedAttempts = failedAttempts;
+    }
+    public void setLockUntil(LocalDateTime lockUntil) {
+        this.lockUntil = lockUntil;
+    }
 }

@@ -20,8 +20,13 @@ public interface UserService {
             String password,
             String pin
     );
-
-    AuthResponse login(String username, String password);
+    AuthResponse login(
+            String username,
+            String password,
+            String captchaToken,
+            String ipAddress
+    );
 
     UserDto getCurrentUser(String username);
+
 }

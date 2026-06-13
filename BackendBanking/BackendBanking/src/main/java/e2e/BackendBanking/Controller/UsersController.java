@@ -2,6 +2,7 @@ package e2e.BackendBanking.Controller;
 
 import e2e.BackendBanking.Dto.User.RegisterRequest;
 import e2e.BackendBanking.Dto.User.UserDto;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -39,11 +40,16 @@ public class UsersController {
     // ===== LOGIN =====
     @PostMapping("/login")
     public AuthResponse login(
-            @RequestBody LoginRequest request) {
+            @RequestBody LoginRequest request,
+            HttpServletRequest httpServletRequest) {
+
+        String ipAddress = httpServletRequest.getRemoteAddr();
 
         return userService.login(
                 request.getUsername(),
-                request.getPassword()
+                request.getPassword(),
+                request.getCaptchaToken(),
+                ipAddress
         );
     }
     @GetMapping("/profile")

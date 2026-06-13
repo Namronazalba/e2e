@@ -9,6 +9,8 @@ import e2e.BackendBanking.Model.Transaction.TransactionStatus;
 import e2e.BackendBanking.Model.Transaction.TransactionType;
 import e2e.BackendBanking.Repository.TransactionRepository;
 
+import java.util.UUID;
+
 
 public abstract class BaseTransactionService {
 
@@ -44,7 +46,7 @@ public abstract class BaseTransactionService {
             String description) {
 
         Transaction transaction = new Transaction();
-
+        transaction.setReference(generateReference());
         transaction.setType(type);
         transaction.setStatus(status);
         transaction.setAmount(amount);
@@ -55,6 +57,8 @@ public abstract class BaseTransactionService {
 
         transactionRepository.save(transaction);
     }
-
+    protected String generateReference() {
+        return "TXN-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
+    }
 
 }

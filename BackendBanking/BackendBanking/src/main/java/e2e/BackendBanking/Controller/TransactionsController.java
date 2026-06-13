@@ -30,9 +30,6 @@ public class TransactionsController {
     // ================= HISTORY =================
     @GetMapping("/history/{accountId}")
     public List<TransactionResponse> getHistory(@PathVariable String accountId) {
-
-//        Account account = accountService.findById(accountId);
-
         return transactionService.getAccountTransactions(accountId);
     }
     // ================= DEPOSIT =================

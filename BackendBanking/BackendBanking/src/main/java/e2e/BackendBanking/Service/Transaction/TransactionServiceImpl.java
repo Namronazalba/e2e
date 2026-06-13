@@ -11,12 +11,14 @@ import e2e.BackendBanking.Model.Transaction.TransactionType;
 import e2e.BackendBanking.Repository.AccountRepository;
 import e2e.BackendBanking.Repository.TransactionRepository;
 import e2e.BackendBanking.Service.Base.BaseTransactionService;
-
+import org.springframework.cache.CacheManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.*;
+
 
 @Service
 public class TransactionServiceImpl
@@ -25,13 +27,15 @@ public class TransactionServiceImpl
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
-
+    private final CacheManager cacheManager;
     public TransactionServiceImpl(
             TransactionRepository transactionRepository,
-            AccountRepository accountRepository) {
+            AccountRepository accountRepository,
+            CacheManager cacheManager) {
 
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
+        this.cacheManager = cacheManager;
     }
     @Override
     public void transferOwn(TransferRequest request,
@@ -78,48 +82,101 @@ public class TransactionServiceImpl
 
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Account not found with id: " + accountId
-                        ));
+                        new ResourceNotFoundException("Account not found"));
 
-        List<Transaction> transactions =
-                transactionRepository.findByFromAccountIdOrToAccountId(
-                        accountId,
-                        accountId
-                );
+        // 1. GET LAST SYNC FIRST (IMPORTANT)
+        LocalDateTime lastSync = getLastSync(accountId);
 
-        return transactions.stream()
-                .map(t -> {
+        // 2. FETCH NEW TRANSACTIONS FROM DB
+        List<Transaction> newTransactions;
 
-                    String fromAccountNumber = null;
-                    String toAccountNumber = null;
-
-                    if (t.getFromAccountId() != null) {
-                        fromAccountNumber = accountRepository
-                                .findById(t.getFromAccountId())
-                                .map(Account::getAccountNumber)
-                                .orElse(null);
-                    }
-
-                    if (t.getToAccountId() != null) {
-                        toAccountNumber = accountRepository
-                                .findById(t.getToAccountId())
-                                .map(Account::getAccountNumber)
-                                .orElse(null);
-                    }
-
-                    return new TransactionResponse(
-                            t.getId(),
-                            t.getType(),
-                            t.getStatus(),
-                            t.getAmount(),
-                            t.getTimestamp(),
-                            fromAccountNumber,
-                            toAccountNumber,
-                            account.getBalance(),
-                            t.getReference()
+        if (lastSync == null) {
+            newTransactions = transactionRepository
+                    .findByFromAccountIdOrToAccountId(accountId, accountId);
+        } else {
+            newTransactions = transactionRepository
+                    .findByFromAccountIdOrToAccountIdAndTimestampAfter(
+                            accountId,
+                            accountId,
+                            lastSync
                     );
-                })
+        }
+
+        // 3. CONVERT NEW TRANSACTIONS
+        List<TransactionResponse> newResponses =
+                mapToResponse(newTransactions, account);
+
+        // 4. GET CACHE (RECENT ONLY, NOT FULL HISTORY)
+        List<TransactionResponse> cached = getCachedTransactions(accountId);
+
+        // 5. MERGE (NEW FIRST)
+        List<TransactionResponse> merged = new ArrayList<>();
+        merged.addAll(newResponses);
+        merged.addAll(cached);
+
+        // 6. SORT BY TIMESTAMP (IMPORTANT FIX)
+        merged.sort(Comparator.comparing(TransactionResponse::getTimestamp).reversed());
+
+        // 7. KEEP ONLY RECENT 30 ITEMS IN CACHE (IMPORTANT FIX)
+        List<TransactionResponse> toCache =
+                merged.stream().limit(30).toList();
+
+        // 8. UPDATE CACHE
+        updateCache(accountId, toCache);
+
+        // 9. UPDATE SYNC USING MAX TIMESTAMP (NOT now())
+        LocalDateTime maxTimestamp = newResponses.stream()
+                .map(TransactionResponse::getTimestamp)
+                .max(LocalDateTime::compareTo)
+                .orElse(lastSync);
+
+        if (maxTimestamp != null) {
+            updateLastSync(accountId, maxTimestamp);
+        }
+
+        return merged;
+    }
+
+    // ---------------- HELPERS ----------------
+
+    private List<TransactionResponse> getCachedTransactions(String accountId) {
+        List<TransactionResponse> cache =
+                cacheManager.getCache("transactionRecentCache")
+                        .get(accountId, List.class);
+
+        return cache != null ? cache : new ArrayList<>();
+    }
+
+    private LocalDateTime getLastSync(String accountId) {
+        return cacheManager.getCache("transactionLastSyncCache")
+                .get(accountId, LocalDateTime.class);
+    }
+
+    private void updateCache(String accountId, List<TransactionResponse> data) {
+        cacheManager.getCache("transactionRecentCache")
+                .put(accountId, data);
+    }
+
+    private void updateLastSync(String accountId, LocalDateTime timestamp) {
+        cacheManager.getCache("transactionLastSyncCache")
+                .put(accountId, timestamp);
+    }
+
+    private List<TransactionResponse> mapToResponse(
+            List<Transaction> transactions,
+            Account account
+    ) {
+        return transactions.stream()
+                .map(t -> new TransactionResponse(
+                        t.getId(),
+                        t.getType(),
+                        t.getStatus(),
+                        t.getAmount(),
+                        t.getTimestamp(),
+                        t.getFromAccountId(),
+                        t.getToAccountId(),
+                        t.getReference()
+                ))
                 .toList();
     }
     @Override

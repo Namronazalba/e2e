@@ -18,7 +18,6 @@ public class TransactionResponse {
     private String fromAccountNumber;
     private String toAccountNumber;
 
-    private Double balance;
     private String reference;
 
     // ===== CONSTRUCTOR =====
@@ -30,7 +29,6 @@ public class TransactionResponse {
             LocalDateTime timestamp,
             String fromAccountNumber,
             String toAccountNumber,
-            Double balance,
             String reference
     ) {
         this.id = id;
@@ -40,7 +38,6 @@ public class TransactionResponse {
         this.timestamp = timestamp;
         this.fromAccountNumber = fromAccountNumber;
         this.toAccountNumber = toAccountNumber;
-        this.balance = balance;
         this.reference = reference;
     }
 
@@ -52,6 +49,5 @@ public class TransactionResponse {
     public LocalDateTime getTimestamp() { return timestamp; }
     public String getFromAccountNumber() { return fromAccountNumber; }
     public String getToAccountNumber() { return toAccountNumber; }
-    public Double getBalance() { return balance; }
     public String getReference() { return reference; }
 }

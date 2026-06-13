@@ -61,7 +61,6 @@ public class DtoMapper {
                 toAccount != null
                         ? toAccount.getAccountNumber()
                         : null,
-                balance,
                 transaction.getReference()
         );
     }
